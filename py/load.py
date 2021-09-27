@@ -6,11 +6,10 @@ from up.pinmap import DIP48
 up = UP1024P()
 
 print("Loading firmware...")
-#up.load_fx2('up256.bin', 'bin')
 up.load_fx2('../FX2/build/gpio256.ihx', 'ihex')
 print("OK")
 
-up.ping()
+up.get_status()
 up.disable_pin_drivers()
 
 # print("Loading FPGA 0...")
@@ -29,4 +28,4 @@ up.beep()
 vcc=3.3
 vio=3.3
 vpp=12
-up.set_voltages(vcc, vio, vpp)
+up.set_voltages(vcc=vcc, vio=vio, vpp=vpp)

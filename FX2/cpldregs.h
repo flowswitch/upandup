@@ -1,6 +1,8 @@
 #ifndef _CPLDREGS_H_INCLUDED
 #define _CPLDREGS_H_INCLUDED
 
+///////// write ////////////////
+
 #define CPLD_REG_VPP_L      0x00
 #define CPLD_REG_VPP_H      0x01
 
@@ -15,6 +17,9 @@
 #define CPLD_DRVDAT_D2  4
 #define CPLD_DRVDAT_D3  8
 #define CPLD_DRVDAT_CLK 0x10
+
+#define CPLD_REG_FPGACTL    0x07
+#define CPLD_FPGA2CTL   1
 
 #define CPLD_REG_VCC_L      0x10
 #define CPLD_REG_VCC_H      0x11
@@ -45,5 +50,19 @@
 
 #define CPLD_REG_PUPD2      0x1A
 //write same value as to PUPD
+
+///////// read ////////////
+
+#define CPLD_REG_VSTS   0x10
+#define CPLD_VSTS   1
+
+#define CPLD_REG_SN0    0x11
+#define CPLD_REG_SN1    0x12
+#define CPLD_REG_SN2    0x13
+#define CPLD_REG_SN3    0x14
+#define CPLD_REG_SN4    0x15
+#define CPLD_REG_SN5    0x16
+#define CPLD_REG_SN6    0x17
+#define CPLD_REG_SN7    0x18
 
 #endif

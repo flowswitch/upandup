@@ -284,3 +284,17 @@ void SendStatus(unsigned char sts)
     SYNCDELAY;
     EP1INBC = 2;
 }
+
+////////// Misc ////////////////////
+
+void ReadSN(void)
+{
+    register BYTE i;
+    while(EP01STAT & bmBIT2);
+    for(i=0; i<4; i++)
+    {
+        EP1INBUF[i] = (CpldReadReg(CPLD_REG_SN0+(i<<1)) & 0x0F) | ((CpldReadReg(CPLD_REG_SN1+(i<<1)) & 0x0F)<<4);
+    }
+    SYNCDELAY;
+    EP1INBC = 4;
+}

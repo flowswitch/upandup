@@ -39,5 +39,6 @@ extern void LedRed(void);
 extern void Beep(void);
 
 extern void SendStatus(unsigned char sts);
+void ReadSN(void);
 
 #endif

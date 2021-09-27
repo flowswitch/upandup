@@ -113,3 +113,15 @@ BYTE FpgaRead()
     //  SYNCDELAY;
     return g_data;
 }
+
+void FpgaWriteReg(BYTE addr, BYTE val)
+{
+    FpgaAddr(addr);
+    FpgaWrite(val);
+}
+
+BYTE FpgaReadReg(BYTE addr)
+{
+    FpgaAddr(addr);
+    return FpgaRead();
+}

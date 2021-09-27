@@ -22,30 +22,37 @@ class UPError(Exception):
 
 
 class CMD(IntEnum):
-    LOAD_FPGA0 = 0xD0
-    LOAD_FPGA1 = 0xCF
-    PING =       0xD1
-    PINS_OE =    0xD2
-    PINS_WR =    0xD3
-    PINS_RD =    0xD4
-    DRV_OFF =    0xD5
-    DRV_ZERO =   0xD6
-    DRV_SET =    0xD7
-    DRV_LOAD =   0xD8
-    VCC_RAMP =   0xDB
-    SET_VREGS =  0xDC
-    LEDS_OFF =   0xDD
-    LED_G =      0xDE
-    LED_R =      0xDF
-    BEEP =       0xE0
-    CPLD_WR =    0xE8
-    CPLD_RD =    0xE9
+    CPLD_WR		= 0xC0
+    CPLD_RD     = 0xC1
+    SET_VREGS   = 0xC2
+    VCC_RAMP    = 0xC3
+    GET_STATUS  = 0xC4
+    LEDS_OFF    = 0xC5
+    LED_G       = 0xC6
+    LED_R       = 0xC7
+    BEEP        = 0xC8
+    GET_SN      = 0xC9
+
+    DRV_OFF     = 0xD0
+    DRV_ZERO    = 0xD1
+    DRV_SET     = 0xD2
+    DRV_LOAD    = 0xD3
+
+    PINS_OE     = 0xE0
+    PINS_WR     = 0xE1
+    PINS_RD     = 0xE2
+
+    LOAD_FPGA0  = 0xF0
+    LOAD_FPGA1  = 0xF1
+    FPGA_WR     = 0xF2
+    FPGA_RD     = 0xF3
 
 
 class PIN_DRV(IntEnum):
     GND = 0
     VCC = 1
     VPP = 2
+    OFF = 0xFF
 
 
 class UP1024P:
@@ -62,17 +69,17 @@ class UP1024P:
 
     ############## UP fw commands ##################        
 
-    def send_cmd(self, cmd):
-        self.dev.bulk_write(CMD_EP, pack('<B', cmd))
+    def send_cmd(self, cmd, data=b''):
+        self.dev.bulk_write(CMD_EP, pack('<B', cmd)+data)
 
 
-    def get_status(self):
+    def recv_status(self):
         return unpack('<H', self.dev.bulk_read(STS_EP, 2))[0]
 
 
-    def ping(self):
-        self.send_cmd(CMD.PING)
-        sts = self.get_status()
+    def get_status(self):
+        self.send_cmd(CMD.GET_STATUS)
+        sts = self.recv_status()
         if sts!=0x0101:
             raise UPError("Bad UP state: %04X" % (sts))
 
@@ -83,7 +90,7 @@ class UP1024P:
             raise ValueError("Invalid FPGA image size")
         self.send_cmd({ 0: CMD.LOAD_FPGA0, 1: CMD.LOAD_FPGA1 }[chip])
         self.dev.bulk_write(DATA_OUT_EP, data)
-        sts = self.get_status()
+        sts = self.recv_status()
         if sts!=0x0101:
             raise UPError("FPGA load error: %04X" % (sts))
 
@@ -105,16 +112,16 @@ class UP1024P:
 
 
     def cpld_write(self, addr, val):
-        self.dev.bulk_write(CMD_EP, pack('<3B', CMD.CPLD_WR, addr, val))            
+        self.send_cmd(CMD.CPLD_WR, pack('<2B', addr, val))            
 
 
     def cpld_read(self, addr):
-        self.dev.bulk_write(CMD_EP, pack('<2B', CMD.CPLD_RD, addr))            
+        self.send_cmd(CMD.CPLD_RD, pack('<B', addr))            
         return self.dev.bulk_read(STS_EP, 1)[0]
       
     ############ pin driver config ################
 
-    def set_voltages(self, vcc, vio, vpp, vmask=0):
+    def set_voltages(self, *, vcc=3.3, vio=3.3, vpp=12, vmask=0):
         if vcc>0:
             vcc_pwm = round(vcc*39-49)
             if vcc_pwm<1 or vcc_pwm>255:
@@ -138,7 +145,7 @@ class UP1024P:
         else:
             vpp_pwm = 1
 
-        self.dev.bulk_write(CMD_EP, pack('<5B', CMD.SET_VREGS, vcc_pwm, vio_pwm, vpp_pwm, vmask))            
+        self.send_cmd(CMD.SET_VREGS, pack('<4B', vcc_pwm, vio_pwm, vpp_pwm, vmask))            
 
 
     def disable_pin_drivers(self):
@@ -156,7 +163,7 @@ class UP1024P:
         if not isinstance(typ, PIN_DRV):
             raise TypeError("Invalid drive type")
 
-        self.dev.bulk_write(CMD_EP, pack('<3B', CMD.DRV_SET, pin, typ))            
+        self.send_cmd(CMD.DRV_SET, pack('<2B', pin, typ))            
 
 
     def apply_pin_drivers(self):
@@ -165,11 +172,11 @@ class UP1024P:
     ######### GPIO256-specific commands. Move to GPIO256 ? ##################
 
     def gpio_oe(self, oe):
-        self.dev.bulk_write(CMD_EP, CMD.PINS_OE+oe)            
+        self.send_cmd(CMD.PINS_OE, oe)            
 
 
     def gpio_out(self, out):
-        self.dev.bulk_write(CMD_EP, CMD.PINS_WR+out)            
+        self.send_cmd(CMD.PINS_WR, out)            
 
 
     def gpio_in(self):
@@ -181,6 +188,7 @@ class UP1024P:
     def ramp_vcc(self):
         self.send_cmd(CMD.VCC_RAMP)
         return self.dev.bulk_read(STS_EP, 1)[0]
-      
-        
-        
+
+    def get_sn(self):
+        self.send_cmd(CMD.GET_SN)
+        return unpack('<I', self.dev.bulk_read(STS_EP, 4))[0]

@@ -13,7 +13,7 @@ up = UP1024P()
 #up.load_fx2('../FX2/build/gpio256.ihx', 'ihex')
 #print("OK")
 
-up.ping()
+up.get_status()
 
 while True:
     addr = input("Enter addr:")
