@@ -1,6 +1,6 @@
 '''UP-1024P low level access'''
 
-__all__ = ['UP1024P', 'UPError', 'VCC', 'VIO', 'VPP', 'PIN_DRV']
+__all__ = ['UP1024P', 'UPError', 'PIN_DRV']
 
 from enum import IntEnum
 from struct import pack, unpack
@@ -32,6 +32,7 @@ class CMD(IntEnum):
     DRV_ZERO =   0xD6
     DRV_SET =    0xD7
     DRV_LOAD =   0xD8
+    VCC_RAMP =   0xDB
     SET_VREGS =  0xDC
     LEDS_OFF =   0xDD
     LED_G =      0xDE
@@ -39,33 +40,6 @@ class CMD(IntEnum):
     BEEP =       0xE0
     CPLD_WR =    0xE8
     CPLD_RD =    0xE9
-
-
-class VCC(IntEnum):
-    V_MIN = 1
-    V_1_65 = 0x0F
-    V_1_85 = 0x17	#0x2B - compensated?
-    V_2_65 = 0x36
-    V_2_80 = 0x3C
-    V_3_30 = 0x4F
-    V_3_60 = 0x5B
-
-
-class VIO(IntEnum):
-    V_MIN = 1
-    V_1_65 = 0x6A
-    V_1_85 = 0x77
-    V_2_65 = 0xAB
-    V_2_80 = 0xB5
-    V_3_30 = 0xD5
-
-
-class VPP(IntEnum):
-    V_MIN = 1
-    V_2_65 = 0x10
-    V_2_80 = 0x18
-    V_3_30 = 0x20
-    V_5_00 = 0x3A
 
 
 class PIN_DRV(IntEnum):
@@ -77,12 +51,13 @@ class PIN_DRV(IntEnum):
 class UP1024P:
     def __init__(self, vid=VID_UP, pid=PID_UP):
         self.dev = FX2Device(vid, pid)
+        self.dev.usb.claimInterface(0)
+        self.dev.usb.setInterfaceAltSetting(0, 1)
 
 
     def load_fx2(self, fwfile, fmt='auto'):
         with open(fwfile, 'rb') as hfi:
             self.dev.load_ram(input_data(hfi, fmt))
-        self.dev.usb.claimInterface(0)
         self.dev.usb.setInterfaceAltSetting(0, 1)
 
     ############## UP fw commands ##################        
@@ -200,4 +175,12 @@ class UP1024P:
     def gpio_in(self):
         self.send_cmd(CMD.PINS_RD)
         return self.dev.bulk_read(STS_EP, 32)
+
+    ######### misc ###############
+
+    def ramp_vcc(self):
+        self.send_cmd(CMD.VCC_RAMP)
+        return self.dev.bulk_read(STS_EP, 1)[0]
+      
+        
         

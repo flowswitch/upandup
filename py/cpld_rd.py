@@ -8,10 +8,10 @@ from up.up1024p import *
 
 up = UP1024P()
 
-print("Loading firmware...")
+#print("Loading firmware...")
 #up.load_fx2('up256.bin', 'bin')
-up.load_fx2('../FX2/build/gpio256.ihx', 'ihex')
-print("OK")
+#up.load_fx2('../FX2/build/gpio256.ihx', 'ihex')
+#print("OK")
 
 up.ping()
 

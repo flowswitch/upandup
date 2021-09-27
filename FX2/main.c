@@ -10,96 +10,87 @@
 
 void Command()
 {
-  BYTE cmd,p0,p1,p2,p3;
-  cmd = EP1OUTBUF[0];
-  switch(cmd)
-  {
+    BYTE cmd,p0,p1,p2,p3;
+    cmd = EP1OUTBUF[0];
+    switch(cmd)
+    {
     case CMD_PING:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         SendStatus(1);
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        SendStatus(1);
+        break;
     case CMD_LOAD_FPGA0:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         LoadFpga(0);
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        LoadFpga(0);
+        break;
     case CMD_LOAD_FPGA1:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         LoadFpga(1);
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        LoadFpga(1);
+        break;
     case CMD_PINS_OE:
-         p0 = EP1OUTBC-1;
-         for(p1=0; p1<p0; p1++)
-         {
-           FpgaAddr(0x80 | p1);
-           FpgaWrite(EP1OUTBUF[p1+1]);
-         }
-         SYNCDELAY;
-         EP1OUTBC = 0;
-         break;
+        p0 = EP1OUTBC-1;
+        for(p1=0; p1<p0; p1++)
+        {
+            FpgaAddr(0x80 | p1);
+            FpgaWrite(EP1OUTBUF[p1+1]);
+        }
+        SYNCDELAY;
+        EP1OUTBC = 0;
+        break;
     case CMD_PINS_WR:
-         p0 = EP1OUTBC-1;
-         for(p1=0; p1<p0; p1++)
-         {
-           FpgaAddr(p1);
-           FpgaWrite(EP1OUTBUF[p1+1]);
-         }
-         SYNCDELAY;
-         EP1OUTBC = 0;
-         break;
+        p0 = EP1OUTBC-1;
+        for(p1=0; p1<p0; p1++)
+        {
+            FpgaAddr(p1);
+            FpgaWrite(EP1OUTBUF[p1+1]);
+        }
+        SYNCDELAY;
+        EP1OUTBC = 0;
+        break;
     case CMD_PINS_RD:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         while(EP01STAT & bmBIT2);
-         for(p1=0; p1<32; p1++)
-         {
-           FpgaAddr(p1);
-           EP1INBUF[p1] = FpgaRead();
-         }
-         EP1INBC = 32;
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        while(EP01STAT & bmBIT2);
+        for(p1=0; p1<32; p1++)
+        {
+            FpgaAddr(p1);
+            EP1INBUF[p1] = FpgaRead();
+        }
+        EP1INBC = 32;
+        break;
     case CMD_DRV_OFF:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         ClearDrivers();
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        DisablePinDrivers();
+        break;
     case CMD_DRV_ZERO:
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         ClearPindrives();
-         break;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        ResetPinConfig();
+        break;
     case CMD_DRV_SET:
-         p0 = EP1OUTBUF[1];
-         p1 = EP1OUTBUF[2];
-         SYNCDELAY;
-         EP1OUTBC = 0;
-         SYNCDELAY;
-         SetPinDrive(p0, p1);
-         break;
+        p0 = EP1OUTBUF[1];
+        p1 = EP1OUTBUF[2];
+        SYNCDELAY;
+        EP1OUTBC = 0;
+        SYNCDELAY;
+        SetPinDrive(p0, p1);
+        break;
     case CMD_DRV_LOAD:
          EP1OUTBC = 0;
          SYNCDELAY;
-         LoadDrivers();
+         ApplyPinDrivers();
          break;
 	case CMD_VCC_RAMP:
          EP1OUTBC = 0;
          SYNCDELAY;
-         ClearDrivers();
-  		 SetVcc(20);
-		 for(p0=20; p0<58; p0++)
-		 {
-			SetVcc(p0);
-			mdelay(2);
-			if (CpldReadReg(0x10) & 1)
-				break;
-		 }
+         p0 = RampVcc();
          while(EP01STAT & bmBIT2);
          EP1INBUF[0] = p0;
          EP1INBC = 1;
-		 SetVcc(0x4F);
-		 break;
+		break;
     case CMD_SET_VREGS:
          p0 = EP1OUTBUF[1];
          p1 = EP1OUTBUF[2];
@@ -152,17 +143,17 @@ void Command()
 void main()
 {
    UpInit();
-   ClearDrivers();
+   DisablePinDrivers();
    LedsOff();
    SetVoltages(79, 213, 1, 0);
-   CpldWriteReg(CPLD_VMASK, 0);
-   CpldWriteReg(CPLD_VCC_EN, 1);
-   ClearDrivers();
+   CpldWriteReg(CPLD_REG_DCDCRANGE, 0);
+   CpldWriteReg(CPLD_REG_VCCEN, CPLD_VCCEN);
+   DisablePinDrivers();
    SetVoltages(1, 213, 1, 0);
 //   FpgaAddr(0x0F);
 //   FpgaWrite(0);
 //   SetPinDrive(0x42, DRV_VPP);
-//   LoadDrivers();
+//   ApplyPinDrivers();
 
    while (1)
    {
